@@ -16,6 +16,8 @@ struct MicControllerTests {
         let fake = FakeAudioEngine()
         let controller = MicController(engine: fake)
         await controller.toggleRunning()  // start
+        #expect(controller.isRunning == true)
+        #expect(fake.startCallCount == 1)
         await controller.toggleRunning()  // stop
         #expect(fake.stopCallCount == 1)
         #expect(controller.isRunning == false)
@@ -44,6 +46,7 @@ struct MicControllerTests {
     @Test func gainChange_callsSetGain() throws {
         let fake = FakeAudioEngine()
         let controller = MicController(engine: fake)
+        #expect(fake.lastGain == nil)
         controller.gain = 1.5
         #expect(fake.lastGain == 1.5)
     }
@@ -53,6 +56,7 @@ struct MicControllerTests {
         let controller = MicController(engine: fake)
         await controller.toggleRunning()  // start
         fake.onConfigurationChange?()
+        #expect(fake.stopCallCount == 1)
         #expect(controller.isRunning == false)
         #expect(controller.errorMessage != nil)
     }
