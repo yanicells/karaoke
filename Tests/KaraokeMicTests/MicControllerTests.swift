@@ -76,4 +76,13 @@ struct MicControllerTests {
         controller.selectedOutputDevice = device
         #expect(fake.lastOutputDeviceID == 99)
     }
+
+    @Test func refreshDevices_doesNotCrashAndYieldsArrays() throws {
+        let fake = FakeAudioEngine()
+        let controller = MicController(engine: fake)
+        controller.refreshDevices()
+        // Hardware may be absent in CI; just verify no crash and the properties are typed correctly.
+        _ = controller.inputDevices as [AudioDevice]
+        _ = controller.outputDevices as [AudioDevice]
+    }
 }

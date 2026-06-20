@@ -62,7 +62,14 @@ package final class MicController {
     }
 
     package func refreshDevices() {
-        // Implemented in Task 3 when AudioDevice.swift is added.
+        inputDevices = listInputDevices()
+        outputDevices = listOutputDevices()
+        if selectedInputDevice == nil || !inputDevices.contains(selectedInputDevice!) {
+            selectedInputDevice = inputDevices.first
+        }
+        if selectedOutputDevice == nil || !outputDevices.contains(selectedOutputDevice!) {
+            selectedOutputDevice = outputDevices.first
+        }
     }
 
     private func handleConfigurationChange() {
@@ -70,11 +77,4 @@ package final class MicController {
         isRunning = false
         errorMessage = "Audio device changed or disconnected. Re-select your devices and tap Start."
     }
-}
-
-// Placeholder — moved to AudioDevice.swift in Task 3.
-package struct AudioDevice: Identifiable, Equatable, Hashable {
-    package let id: AudioDeviceID
-    package let name: String
-    package let isBluetooth: Bool
 }
