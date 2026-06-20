@@ -11,6 +11,8 @@ final class FakeAudioEngine: AudioEngineProtocol {
     var lastInputDeviceID: AudioDeviceID?
     var lastOutputDeviceID: AudioDeviceID?
     var shouldThrowOnStart = false
+    var shouldThrowOnSetInputDevice = false
+    var shouldThrowOnSetOutputDevice = false
     var estimatedLatencyMs: Double = 8.0
     var onConfigurationChange: (@MainActor () -> Void)?
 
@@ -25,10 +27,18 @@ final class FakeAudioEngine: AudioEngineProtocol {
         isRunning = false
     }
 
-    func setInputDevice(_ deviceID: AudioDeviceID) throws { lastInputDeviceID = deviceID }
-    func setOutputDevice(_ deviceID: AudioDeviceID) throws { lastOutputDeviceID = deviceID }
+    func setInputDevice(_ deviceID: AudioDeviceID) throws {
+        if shouldThrowOnSetInputDevice { throw FakeEngineError.deviceSetFailed }
+        lastInputDeviceID = deviceID
+    }
+
+    func setOutputDevice(_ deviceID: AudioDeviceID) throws {
+        if shouldThrowOnSetOutputDevice { throw FakeEngineError.deviceSetFailed }
+        lastOutputDeviceID = deviceID
+    }
+
     func setGain(_ gain: Float) { lastGain = gain }
     func setMuted(_ muted: Bool) { lastMuted = muted }
 
-    enum FakeEngineError: Error { case startFailed }
+    enum FakeEngineError: Error { case startFailed, deviceSetFailed }
 }

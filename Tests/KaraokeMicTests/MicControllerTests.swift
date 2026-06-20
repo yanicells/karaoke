@@ -67,6 +67,7 @@ struct MicControllerTests {
         let device = AudioDevice(id: 42, name: "Test Mic", isBluetooth: false)
         controller.selectedInputDevice = device
         #expect(fake.lastInputDeviceID == 42)
+        #expect(controller.errorMessage == nil)
     }
 
     @Test func selectedOutputDevice_callsEngineSetOutputDevice() throws {
@@ -75,6 +76,32 @@ struct MicControllerTests {
         let device = AudioDevice(id: 99, name: "Test Speaker", isBluetooth: false)
         controller.selectedOutputDevice = device
         #expect(fake.lastOutputDeviceID == 99)
+        #expect(controller.errorMessage == nil)
+    }
+
+    @Test func selectedInputDeviceFailure_setsErrorMessage() throws {
+        let fake = FakeAudioEngine()
+        fake.shouldThrowOnSetInputDevice = true
+        let controller = MicController(engine: fake)
+        controller.selectedInputDevice = AudioDevice(id: 7, name: "Bad Mic", isBluetooth: false)
+        #expect(controller.errorMessage != nil)
+    }
+
+    @Test func selectedOutputDeviceFailure_setsErrorMessage() throws {
+        let fake = FakeAudioEngine()
+        fake.shouldThrowOnSetOutputDevice = true
+        let controller = MicController(engine: fake)
+        controller.selectedOutputDevice = AudioDevice(id: 8, name: "Bad Speaker", isBluetooth: false)
+        #expect(controller.errorMessage != nil)
+    }
+
+    @Test func stop_resetsEstimatedLatency() async throws {
+        let fake = FakeAudioEngine()
+        let controller = MicController(engine: fake)
+        await controller.toggleRunning()  // start — picks up fake's 8.0ms
+        #expect(controller.estimatedLatencyMs == 8.0)
+        await controller.toggleRunning()  // stop
+        #expect(controller.estimatedLatencyMs == 0)
     }
 
     @Test func refreshDevices_doesNotCrashAndYieldsArrays() throws {

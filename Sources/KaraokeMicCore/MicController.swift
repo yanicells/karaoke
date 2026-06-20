@@ -19,14 +19,22 @@ package final class MicController {
     package var selectedInputDevice: AudioDevice? {
         didSet {
             guard let d = selectedInputDevice else { return }
-            try? engine.setInputDevice(d.id)
+            do {
+                try engine.setInputDevice(d.id)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
     package var selectedOutputDevice: AudioDevice? {
         didSet {
             guard let d = selectedOutputDevice else { return }
-            try? engine.setOutputDevice(d.id)
+            do {
+                try engine.setOutputDevice(d.id)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -43,6 +51,7 @@ package final class MicController {
         if isRunning {
             engine.stop()
             isRunning = false
+            estimatedLatencyMs = 0
         } else {
             do {
                 try await engine.start()
@@ -75,6 +84,7 @@ package final class MicController {
     private func handleConfigurationChange() {
         engine.stop()
         isRunning = false
+        estimatedLatencyMs = 0
         errorMessage = "Audio device changed or disconnected. Re-select your devices and tap Start."
     }
 }
