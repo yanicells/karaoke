@@ -29,18 +29,3 @@ package enum AudioEngineError: Error, LocalizedError {
         }
     }
 }
-
-// Placeholder — deleted when AudioEngine.swift is created in Task 4.
-@MainActor
-package final class AudioEngine: AudioEngineProtocol {
-    package var isRunning: Bool = false
-    package var estimatedLatencyMs: Double = 0.0
-    package var onConfigurationChange: (@MainActor () -> Void)?
-    package init() {}
-    package func start() async throws {}
-    package func stop() {}
-    package func setInputDevice(_ deviceID: AudioDeviceID) throws {}
-    package func setOutputDevice(_ deviceID: AudioDeviceID) throws {}
-    package func setGain(_ gain: Float) {}
-    package func setMuted(_ muted: Bool) {}
-}
