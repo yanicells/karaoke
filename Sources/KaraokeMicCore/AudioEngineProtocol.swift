@@ -16,6 +16,7 @@ package protocol AudioEngineProtocol: AnyObject {
 package enum AudioEngineError: Error, LocalizedError {
     case deviceSetFailed(OSStatus)
     case engineStartFailed(Error)
+    case audioUnitFailed(String, OSStatus)
     case microphonePermissionDenied
 
     package var errorDescription: String? {
@@ -24,6 +25,8 @@ package enum AudioEngineError: Error, LocalizedError {
             return "Failed to set audio device (OSStatus \(status))."
         case .engineStartFailed(let error):
             return "Audio engine failed to start: \(error.localizedDescription)"
+        case .audioUnitFailed(let operation, let status):
+            return "\(operation) failed (OSStatus \(status))."
         case .microphonePermissionDenied:
             return "Microphone access denied. Go to System Settings → Privacy & Security → Microphone and enable KaraokeMic."
         }

@@ -20,6 +20,10 @@ package func listOutputDevices() -> [AudioDevice] {
     }
 }
 
+package func audioDeviceExists(_ id: AudioDeviceID) -> Bool {
+    allDeviceIDs().contains(id)
+}
+
 private func allDeviceIDs() -> [AudioDeviceID] {
     var address = AudioObjectPropertyAddress(
         mSelector: kAudioHardwarePropertyDevices,

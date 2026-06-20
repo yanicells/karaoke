@@ -3,7 +3,7 @@ import CoreAudio
 
 @MainActor
 @Observable
-package final class MicController {
+public final class MicController {
     package private(set) var isRunning: Bool = false
     package var isMuted: Bool = false
     package private(set) var estimatedLatencyMs: Double = 0
@@ -21,8 +21,12 @@ package final class MicController {
             guard let d = selectedInputDevice else { return }
             do {
                 try engine.setInputDevice(d.id)
+                errorMessage = nil
+                estimatedLatencyMs = engine.isRunning ? engine.estimatedLatencyMs : 0
             } catch {
                 errorMessage = error.localizedDescription
+                isRunning = engine.isRunning
+                estimatedLatencyMs = isRunning ? engine.estimatedLatencyMs : 0
             }
         }
     }
@@ -32,8 +36,12 @@ package final class MicController {
             guard let d = selectedOutputDevice else { return }
             do {
                 try engine.setOutputDevice(d.id)
+                errorMessage = nil
+                estimatedLatencyMs = engine.isRunning ? engine.estimatedLatencyMs : 0
             } catch {
                 errorMessage = error.localizedDescription
+                isRunning = engine.isRunning
+                estimatedLatencyMs = isRunning ? engine.estimatedLatencyMs : 0
             }
         }
     }
@@ -45,6 +53,12 @@ package final class MicController {
         self.engine.onConfigurationChange = { [weak self] in
             self?.handleConfigurationChange()
         }
+    }
+
+    /// Public entry point for app targets outside this module (e.g. the Xcode
+    /// app). Uses the real `AudioEngine`; tests use the `package init(engine:)`.
+    public convenience init() {
+        self.init(engine: AudioEngine())
     }
 
     package func toggleRunning() async {

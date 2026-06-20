@@ -1,21 +1,20 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
+// The runnable app lives in the Xcode project (KaraokeMic.xcodeproj, generated
+// from project.yml). This package provides the testable core library; the app
+// entry point in App/ is compiled by the Xcode app target, which links this
+// library as a package product.
 let package = Package(
     name: "KaraokeMic",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "KaraokeMic", targets: ["KaraokeMic"]),
+        .library(name: "KaraokeMicCore", targets: ["KaraokeMicCore"]),
     ],
     targets: [
         .target(
             name: "KaraokeMicCore",
             path: "Sources/KaraokeMicCore"
-        ),
-        .executableTarget(
-            name: "KaraokeMic",
-            dependencies: ["KaraokeMicCore"],
-            path: "Sources/KaraokeMic"
         ),
         .testTarget(
             name: "KaraokeMicTests",

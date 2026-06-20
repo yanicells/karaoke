@@ -1,11 +1,11 @@
 import SwiftUI
 
-package struct ContentView: View {
+public struct ContentView: View {
     @Environment(MicController.self) var controller
 
-    package init() {}
+    public init() {}
 
-    package var body: some View {
+    public var body: some View {
         @Bindable var controller = controller
 
         VStack(alignment: .leading, spacing: 20) {
