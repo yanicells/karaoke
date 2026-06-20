@@ -1,0 +1,17 @@
+# Swift / SwiftPM
+.build/
+.swiftpm/
+*.xcodeproj
+
+# Editor
+.vscode/
+
+# SDD scratch (per-worktree progress ledger and review artifacts)
+.superpowers/
+
+# Dev build artifacts
+KaraokeMic.app/
+Icon.icns
+
+# macOS
+.DS_Store
