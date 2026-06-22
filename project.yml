@@ -29,6 +29,7 @@ targets:
         # Generate Info.plist from build settings; declare mic usage for TCC.
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "KaraokeMic needs microphone access to route your voice to the speaker."
+        INFOPLIST_KEY_CFBundleDisplayName: KaraokeMic
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
         # Non-sandboxed: creating a private CoreAudio aggregate device is not
         # permitted under the App Sandbox. Local/personal app, so this is fine.

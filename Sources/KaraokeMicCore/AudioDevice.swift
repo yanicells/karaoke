@@ -4,19 +4,35 @@ package struct AudioDevice: Identifiable, Equatable, Hashable {
     package let id: AudioDeviceID
     package let name: String
     package let isBluetooth: Bool
+    package let isBuiltIn: Bool
+    package let isContinuityCapture: Bool
+
+    package init(
+        id: AudioDeviceID,
+        name: String,
+        isBluetooth: Bool,
+        isBuiltIn: Bool = false,
+        isContinuityCapture: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.isBluetooth = isBluetooth
+        self.isBuiltIn = isBuiltIn
+        self.isContinuityCapture = isContinuityCapture
+    }
 }
 
 package func listInputDevices() -> [AudioDevice] {
     allDeviceIDs().compactMap { id in
         guard deviceHasStreams(id, scope: kAudioObjectPropertyScopeInput) else { return nil }
-        return AudioDevice(id: id, name: deviceName(id), isBluetooth: deviceIsBluetooth(id))
+        return audioDevice(id)
     }
 }
 
 package func listOutputDevices() -> [AudioDevice] {
     allDeviceIDs().compactMap { id in
         guard deviceHasStreams(id, scope: kAudioObjectPropertyScopeOutput) else { return nil }
-        return AudioDevice(id: id, name: deviceName(id), isBluetooth: deviceIsBluetooth(id))
+        return audioDevice(id)
     }
 }
 
@@ -42,6 +58,18 @@ private func allDeviceIDs() -> [AudioDeviceID] {
     return ids
 }
 
+private func audioDevice(_ id: AudioDeviceID) -> AudioDevice {
+    let transport = deviceTransportType(id)
+    return AudioDevice(
+        id: id,
+        name: deviceName(id),
+        isBluetooth: transport == kAudioDeviceTransportTypeBluetooth
+            || transport == kAudioDeviceTransportTypeBluetoothLE,
+        isBuiltIn: transport == kAudioDeviceTransportTypeBuiltIn,
+        isContinuityCapture: continuityCaptureTransportTypes.contains(transport)
+    )
+}
+
 private func deviceName(_ id: AudioDeviceID) -> String {
     var address = AudioObjectPropertyAddress(
         mSelector: kAudioObjectPropertyName,
@@ -65,7 +93,7 @@ private func deviceHasStreams(_ id: AudioDeviceID, scope: AudioObjectPropertySco
     return AudioObjectGetPropertyDataSize(id, &address, 0, nil, &size) == noErr && size > 0
 }
 
-private func deviceIsBluetooth(_ id: AudioDeviceID) -> Bool {
+private func deviceTransportType(_ id: AudioDeviceID) -> UInt32 {
     var address = AudioObjectPropertyAddress(
         mSelector: kAudioDevicePropertyTransportType,
         mScope: kAudioObjectPropertyScopeGlobal,
@@ -74,8 +102,19 @@ private func deviceIsBluetooth(_ id: AudioDeviceID) -> Bool {
     var transport: UInt32 = 0
     var size = UInt32(MemoryLayout<UInt32>.size)
     guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &transport) == noErr else {
-        return false
+        return kAudioDeviceTransportTypeUnknown
     }
-    return transport == kAudioDeviceTransportTypeBluetooth
-        || transport == kAudioDeviceTransportTypeBluetoothLE
+    return transport
+}
+
+private let continuityCaptureTransportTypes: Set<UInt32> = [
+    fourCharCode("ccap"),
+    fourCharCode("ccwd"),
+    fourCharCode("ccwl"),
+]
+
+private func fourCharCode(_ value: String) -> UInt32 {
+    value.utf8.reduce(UInt32(0)) { result, byte in
+        (result << 8) | UInt32(byte)
+    }
 }

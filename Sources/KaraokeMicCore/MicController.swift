@@ -88,10 +88,10 @@ public final class MicController {
         inputDevices = listInputDevices()
         outputDevices = listOutputDevices()
         if selectedInputDevice == nil || !inputDevices.contains(selectedInputDevice!) {
-            selectedInputDevice = inputDevices.first
+            selectedInputDevice = preferredInputDevice(from: inputDevices)
         }
         if selectedOutputDevice == nil || !outputDevices.contains(selectedOutputDevice!) {
-            selectedOutputDevice = outputDevices.first
+            selectedOutputDevice = preferredOutputDevice(from: outputDevices)
         }
     }
 
@@ -100,5 +100,21 @@ public final class MicController {
         isRunning = false
         estimatedLatencyMs = 0
         errorMessage = "Audio device changed or disconnected. Re-select your devices and tap Start."
+    }
+
+    private func preferredInputDevice(from devices: [AudioDevice]) -> AudioDevice? {
+        devices.first { $0.isContinuityCapture }
+            ?? devices.first { $0.name.localizedStandardContains("cell") }
+            ?? devices.first { !$0.isBuiltIn }
+            ?? devices.first
+    }
+
+    private func preferredOutputDevice(from devices: [AudioDevice]) -> AudioDevice? {
+        devices.first {
+            $0.isBuiltIn && $0.name.localizedStandardContains("speaker")
+        }
+            ?? devices.first { $0.name.localizedStandardContains("speaker") }
+            ?? devices.first { !$0.isBluetooth && !$0.isContinuityCapture }
+            ?? devices.first
     }
 }
