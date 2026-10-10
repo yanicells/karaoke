@@ -41,6 +41,11 @@ STAGED_APP="$STAGING_DIR/KaraokeMic.app"
 "$ROOT_DIR/Scripts/validate_bundle.sh" "$STAGED_APP"
 if [[ "$LAUNCH_AFTER_INSTALL" == 1 ]]; then
   osascript -e 'tell application id "com.karaokemic.KaraokeMic" to quit' >/dev/null 2>&1 || true
+  # Opening while the old instance is still quitting fails with LaunchServices error -600.
+  for _ in {1..50}; do
+    pgrep -xq KaraokeMic || break
+    sleep 0.1
+  done
 fi
 [[ ! -e "$INSTALL_APP" ]] || mv "$INSTALL_APP" "$STAGING_DIR/previous.app"
 mv "$STAGED_APP" "$INSTALL_APP"

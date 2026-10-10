@@ -68,5 +68,10 @@ else
   "$ROOT_DIR/Scripts/package_app.sh" "$CONFIGURATION"
 fi
 osascript -e 'tell application id "com.karaokemic.KaraokeMic" to quit' >/dev/null 2>&1 || true
+# Opening while the old instance is still quitting fails with LaunchServices error -600.
+for _ in {1..50}; do
+  pgrep -xq KaraokeMic || break
+  sleep 0.1
+done
 open "$ROOT_DIR/dist/KaraokeMic.app"
 echo "Opened $ROOT_DIR/dist/KaraokeMic.app"
