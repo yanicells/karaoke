@@ -4,7 +4,7 @@ A small native macOS app for hearing your microphone through a selected speaker 
 
 Choose your microphone and speaker, adjust mic volume, then press **Start monitoring**. **Mute** silences your voice without stopping the route. Play YouTube or other music separately in your browser; KaraokeMic does not control or capture it.
 
-Requires macOS 14 or later, stable Rust, and Xcode with its command-line tools selected (`sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`). Builds target the host architecture.
+Requires macOS 14 or later, stable Rust, and Xcode with its command-line tools selected (`sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`). Builds target the host architecture by default. Cross-architecture builds require the corresponding Rust target, which you can install with `rustup target add aarch64-apple-darwin` and/or `rustup target add x86_64-apple-darwin`.
 
 ## Build and run
 
@@ -19,13 +19,16 @@ The development script packages and opens a debug app at `dist/KaraokeMic.app`. 
 
 ```sh
 Scripts/package_app.sh                    # Signed release: dist/KaraokeMic.app
+ARCHES='arm64 x86_64' Scripts/package_app.sh # Universal release bundle
+Scripts/compile_and_run.sh --release-universal
+Scripts/compile_and_run.sh --release-arches='arm64 x86_64'
 open dist/KaraokeMic.app                  # Run the release bundle
 Scripts/install_spotlight_app.sh          # Install in ~/Applications and launch
 Scripts/install_spotlight_app.sh --no-launch
 Scripts/install_spotlight_app.sh --no-launch --reset-mic-permission
 ```
 
-Packaging reuses Cargo's build cache, validates a staged bundle, and then replaces the previous output. Installation also validates its staged copy before replacing the installed app and registering it with LaunchServices and Spotlight. `--reset-mic-permission` explicitly resets only `com.karaokemic.KaraokeMic`; the next bundled launch can ask again. Debug and release builds use the same bundle identifier.
+Packaging reuses Cargo's build cache, validates a staged bundle, and then replaces the previous output. Set `ARCHES` to `arm64`, `x86_64`, or both to select slices; the default is the host architecture. Host builds omit Cargo's `--target` option to reuse the normal host cache, while cross builds use `aarch64-apple-darwin` and `x86_64-apple-darwin`. `compile_and_run.sh` also accepts `--release-universal` or `--release-arches='arm64 x86_64'`; these release options cannot be combined with `--debug`. Installation also validates its staged copy before replacing the installed app and registering it with LaunchServices and Spotlight. `--reset-mic-permission` explicitly resets only `com.karaokemic.KaraokeMic`; the next bundled launch can ask again. Debug and release builds use the same bundle identifier.
 
 Local bundles are ad-hoc signed and unsandboxed, with a normal Dock presence and native menus. They are not notarized distribution builds. An ad-hoc signature identifies a specific build, so macOS may require microphone permission again after a rebuild. A consistent Developer ID signing identity is needed for durable distribution identity.
 
@@ -38,10 +41,12 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 Scripts/validate_bundle.sh                # After packaging; does not launch
 dist/KaraokeMic.app/Contents/MacOS/KaraokeMic --list-devices
-dist/KaraokeMic.app/Contents/MacOS/KaraokeMic --probe-muted
+open -n -W --stdout /tmp/karaokemic-probe.log --stderr /tmp/karaokemic-probe.log \
+  dist/KaraokeMic.app --args --probe-muted
+cat /tmp/karaokemic-probe.log
 ```
 
-CI runs the build checks and packages a release app on macOS. The explicit muted probe requires existing microphone permission and verifies real audio callbacks without playing your voice. Optional arguments are `--probe-muted input-id output-id duration-ms`. It never requests or resets permission. Hardware routing, permission prompts, and audible behavior need manual verification; see the [port checklist](docs/rust-port.md).
+CI runs the build checks and packages a release app on macOS. The explicit muted probe requires existing microphone permission and verifies real audio callbacks without playing your voice. Launch it through `open` as shown so macOS uses the app's permission identity; running the executable directly can use the terminal or development host's permission context instead. Optional arguments are `--probe-muted input-id output-id duration-ms`. It never requests or resets permission. Hardware routing, permission prompts, and audible behavior need manual verification; see the [port checklist](docs/rust-port.md).
 
 ## Limits and permissions
 
