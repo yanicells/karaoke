@@ -183,7 +183,6 @@ impl MicView {
         };
         self.picker = None;
         self.send(command, cx);
-        cx.notify();
     }
 
     fn toggle_picker(&mut self, control: Control, cx: &mut Context<Self>) {
@@ -217,7 +216,6 @@ impl MicView {
             let gain = ((fraction * 40.).round() / 20.).clamp(0., 2.);
             let command = self.state.set_gain(gain);
             self.send(command, cx);
-            cx.notify();
         }
     }
 

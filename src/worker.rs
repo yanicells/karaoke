@@ -12,6 +12,9 @@ use crate::audio::{self, AudioEngine, Devices};
 
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
 const DEVICE_INTERVAL: Duration = Duration::from_millis(1500);
+/// Shown when a selected device disappears while a route is active.
+pub const DEVICE_LOST: &str =
+    "Audio device changed or disconnected. Re-select your devices and press Start.";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
@@ -379,10 +382,12 @@ fn refresh<B: Backend>(
                 }
             }
             if let Some(request_id) = disconnected {
-                return events.try_send(Event::Failed {
-                    request_id,
-                    error: "Audio device changed or disconnected. Re-select your devices and tap Start.".into(),
-                }).is_ok();
+                return events
+                    .try_send(Event::Failed {
+                        request_id,
+                        error: DEVICE_LOST.into(),
+                    })
+                    .is_ok();
             }
             true
         }

@@ -1,14 +1,10 @@
 //! macOS microphone playthrough. Construct and own AudioEngine on the dedicated
 //! audio worker; permission and device setup may block. UI gain/mute updates go
 //! through that worker and become atomic callback controls.
-#[cfg(target_os = "macos")]
 mod devices;
 mod dsp;
-#[cfg(target_os = "macos")]
 mod ffi;
-#[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_os = "macos")]
 mod permission;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,9 +35,6 @@ pub struct AudioDiagnostics {
     pub queued_frames: usize,
 }
 
-#[cfg(target_os = "macos")]
 pub use devices::devices;
-#[cfg(target_os = "macos")]
 pub use macos::AudioEngine;
-#[cfg(target_os = "macos")]
 pub use permission::permission_status;

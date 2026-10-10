@@ -1,5 +1,3 @@
-#![cfg_attr(not(target_os = "macos"), allow(unused))]
-
 #[cfg(not(target_os = "macos"))]
 compile_error!("KaraokeMic uses native macOS CoreAudio and requires macOS 14 or newer.");
 

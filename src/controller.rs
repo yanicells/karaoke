@@ -1,5 +1,5 @@
 use crate::audio::{AudioDevice, Devices};
-use crate::worker::{Command, Event};
+use crate::worker::{Command, DEVICE_LOST, Event};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
@@ -226,10 +226,7 @@ impl Controller {
         }
         self.devices = devices;
         if (input_lost || output_lost) && self.is_active() {
-            self.error = Some(
-                "Audio device changed or disconnected. Re-select your devices and tap Start."
-                    .into(),
-            );
+            self.error = Some(DEVICE_LOST.into());
             return Some(self.stop());
         }
         None
