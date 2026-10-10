@@ -2,7 +2,7 @@ name: Rust macOS
 
 on:
   push:
-    branches: [main, feat/rust-gpui]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

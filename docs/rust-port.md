@@ -1,6 +1,6 @@
 # Rust / GPUI port
 
-The Rust application replaces the shipped SwiftUI app with GPUI 0.2.2 and direct native macOS audio FFI. The Cargo package is `karaoke-mic`; its app executable is `KaraokeMic`. Historical design documents remain in `docs/superpowers`; this checklist follows the shipped Swift implementation rather than proposed features in `IDEAS.md` or the original AVAudioEngine design.
+The Rust application replaces the shipped SwiftUI app with GPUI 0.2.2 and direct native macOS audio FFI. The Cargo package is `karaoke-mic`; its app executable is `KaraokeMic`. This checklist follows the behavior of the shipped Swift app rather than proposed features in `IDEAS.md`.
 
 ## Feature acceptance checklist
 
@@ -26,7 +26,7 @@ Complete these checks against the final Rust bundle. Unchecked items are pending
 - [ ] Closing/quitting follows normal macOS application behavior and releases the native audio resources.
 - [ ] Normal Dock, native application menus, and microphone icon work when launching the bundle through Finder/LaunchServices.
 
-There was no saved performance history or recording database in the shipped app. Preserve repository history and the historical design/plan documents; persistent settings, song controls, effects, visualizers, and recording are outside this port's feature baseline.
+There was no saved performance history or recording database in the shipped app. Persistent settings, song controls, effects, visualizers, and recording are outside this port's feature baseline.
 
 ## Bundle and installation
 
