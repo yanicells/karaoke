@@ -15,3 +15,7 @@ Icon.icns
 
 # macOS
 .DS_Store
+
+# Rust / packaged app
+target/
+dist/

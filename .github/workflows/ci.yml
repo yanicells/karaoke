@@ -1,0 +1,45 @@
+name: Rust macOS
+
+on:
+  push:
+    branches: [main, feat/rust-gpui]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-and-bundle:
+    runs-on: macos-15
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Ensure Metal compiler is available
+        run: xcrun --find metal >/dev/null || xcodebuild -downloadComponent MetalToolchain
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check all targets
+        run: cargo check --locked --all-targets
+      - name: Lint
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Unit tests
+        run: cargo test --locked
+      - name: Build and validate release bundle
+        run: Scripts/package_app.sh release
+      - name: Archive native app
+        run: tar -czf dist/KaraokeMic-macos.tar.gz -C dist KaraokeMic.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KaraokeMic-macos
+          path: dist/KaraokeMic-macos.tar.gz
+          if-no-files-found: error
