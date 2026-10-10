@@ -1,63 +1,77 @@
 #!/usr/bin/env bash
-# Kill running instances, package, relaunch, verify.
+# Package first, then relaunch the validated app through LaunchServices.
 set -euo pipefail
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_NAME=${APP_NAME:-MyApp}
-APP_BUNDLE="${ROOT_DIR}/${APP_NAME}.app"
-APP_PROCESS_PATTERN="${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
-DEBUG_PROCESS_PATTERN="${ROOT_DIR}/.build/debug/${APP_NAME}"
-RELEASE_PROCESS_PATTERN="${ROOT_DIR}/.build/release/${APP_NAME}"
+CONFIGURATION=release
 RUN_TESTS=0
 RELEASE_ARCHES=""
-
-log() { printf '%s\n' "$*"; }
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-
-for arg in "$@"; do
-  case "${arg}" in
+RELEASE_ARCHES_SET=0
+DEBUG_SET=0
+while [[ $# -gt 0 ]]; do
+  arg="$1"
+  shift
+  case "$arg" in
+    --debug) CONFIGURATION=debug; DEBUG_SET=1 ;;
     --test|-t) RUN_TESTS=1 ;;
-    --release-universal) RELEASE_ARCHES="arm64 x86_64" ;;
-    --release-arches=*) RELEASE_ARCHES="${arg#*=}" ;;
+    --release-universal)
+      RELEASE_ARCHES="arm64 x86_64"
+      RELEASE_ARCHES_SET=1
+      ;;
+    --release-arches=*)
+      RELEASE_ARCHES="${arg#*=}"
+      RELEASE_ARCHES_SET=1
+      ;;
+    --release-arches)
+      [[ $# -gt 0 ]] || { echo "--release-arches requires a non-empty value." >&2; exit 1; }
+      RELEASE_ARCHES="$1"
+      shift
+      RELEASE_ARCHES_SET=1
+      ;;
     --help|-h)
-      log "Usage: $(basename "$0") [--test] [--release-universal] [--release-arches=\"arm64 x86_64\"]"
+      echo "Usage: $(basename "$0") [--debug] [--test] [--release-universal | --release-arches='arm64 x86_64']"
       exit 0
       ;;
+    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
-
-log "==> Killing existing ${APP_NAME} instances"
-pkill -f "${APP_PROCESS_PATTERN}" 2>/dev/null || true
-pkill -f "${DEBUG_PROCESS_PATTERN}" 2>/dev/null || true
-pkill -f "${RELEASE_PROCESS_PATTERN}" 2>/dev/null || true
-pkill -x "${APP_NAME}" 2>/dev/null || true
-
-if [[ "${RUN_TESTS}" == "1" ]]; then
-  log "==> swift test"
-  swift test -q
+if [[ "$RELEASE_ARCHES_SET" == 1 ]]; then
+  [[ -n "$RELEASE_ARCHES" && "$RELEASE_ARCHES" =~ [^[:space:]] ]] || {
+    echo "--release-arches must not be empty." >&2
+    exit 1
+  }
+  ARCHES_INPUT="${RELEASE_ARCHES//$'\n'/ }"
+  read -r -a ARCH_LIST <<< "$ARCHES_INPUT"
+  [[ ${#ARCH_LIST[@]} -gt 0 ]] || { echo "--release-arches must include arm64 and/or x86_64." >&2; exit 1; }
+  for ARCH in "${ARCH_LIST[@]}"; do
+    case "$ARCH" in
+      arm64|x86_64) ;;
+      *) echo "Unsupported architecture '$ARCH'; use arm64 and/or x86_64." >&2; exit 1 ;;
+    esac
+    COUNT=0
+    for CHECK_ARCH in "${ARCH_LIST[@]}"; do
+      [[ "$CHECK_ARCH" != "$ARCH" ]] || ((COUNT += 1))
+    done
+    [[ "$COUNT" -eq 1 ]] || { echo "Duplicate architecture '$ARCH' in --release-arches." >&2; exit 1; }
+  done
+  [[ "$DEBUG_SET" == 0 ]] || {
+    echo "--release-universal and --release-arches cannot be used with --debug." >&2
+    exit 1
+  }
 fi
-
-HOST_ARCH="$(uname -m)"
-ARCHES_VALUE="${HOST_ARCH}"
-if [[ -n "${RELEASE_ARCHES}" ]]; then
-  ARCHES_VALUE="${RELEASE_ARCHES}"
+cd "$ROOT_DIR"
+if [[ "$RUN_TESTS" == 1 ]]; then
+  cargo test --locked --package karaoke-mic
 fi
-
-log "==> package app"
-SIGNING_MODE=adhoc ARCHES="${ARCHES_VALUE}" "${ROOT_DIR}/Scripts/package_app.sh" release
-
-log "==> launch app"
-if ! open "${APP_BUNDLE}"; then
-  log "WARN: open failed; launching binary directly."
-  "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" >/dev/null 2>&1 &
-  disown
+if [[ "$RELEASE_ARCHES_SET" == 1 ]]; then
+  ARCHES="$RELEASE_ARCHES" "$ROOT_DIR/Scripts/package_app.sh" "$CONFIGURATION"
+else
+  "$ROOT_DIR/Scripts/package_app.sh" "$CONFIGURATION"
 fi
-
-for _ in {1..10}; do
-  if pgrep -f "${APP_PROCESS_PATTERN}" >/dev/null 2>&1; then
-    log "OK: ${APP_NAME} is running."
-    exit 0
-  fi
-  sleep 0.4
+osascript -e 'tell application id "com.karaokemic.KaraokeMic" to quit' >/dev/null 2>&1 || true
+# Opening while the old instance is still quitting fails with LaunchServices error -600.
+for _ in {1..50}; do
+  pgrep -xq KaraokeMic || break
+  sleep 0.1
 done
-fail "App exited immediately. Check crash logs in Console.app (User Reports)."
+open "$ROOT_DIR/dist/KaraokeMic.app"
+echo "Opened $ROOT_DIR/dist/KaraokeMic.app"
