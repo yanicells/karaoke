@@ -50,8 +50,22 @@ CI runs formatting, all-target check, strict Clippy, unit tests, release packagi
 
 Manual acceptance needs a bundled launch and real devices: permission granted/denied, Start/Stop, gain/mute, live device switching, disconnection recovery, Bluetooth warning, independent browser playback, and Dock/menu/Spotlight behavior. The displayed latency is not a measured round-trip value; verify audible monitoring separately. Never reset permission or overwrite an installed app as an incidental build check.
 
+### Local verification on 2026-10-10
+
+- All 34 unit tests passed, covering controller preferences/state transitions, worker cancellation/shutdown/disconnection, permission-block ownership, channel layouts, mute, bounded queues, clock drift, callback jitter, and resampling alias rejection.
+- Formatting, all-target Cargo check, strict Clippy, and `git diff --check` passed.
+- Apple Silicon and Intel release executables compiled successfully. Both the native Apple Silicon bundle and a universal `arm64 x86_64` bundle passed architecture, metadata/icon, and signature validation. Packaging argument checks rejected empty, unsupported, and duplicate architectures and conflicting debug/release options before replacing the bundle.
+- A native window screenshot confirmed the text, microphone logo, device selections, gain slider, and Start/Mute controls render. The initial missing text/logo issue was fixed by enabling GPUI's font renderer and supplying embedded assets.
+- Live discovery found a Continuity phone microphone, built-in microphone and speakers, and a virtual audio device.
+- After the user granted access in the release app, silent probes launched through LaunchServices passed for both the phone microphone → built-in speakers and built-in microphone → built-in speakers. Each three-second run processed 143,872 input frames and 142,848 output frames, with zero underruns, overruns, or backlog resets. The probes changed gain while muted and stopped/disposed each route on completion.
+- Estimated latency was 185.58 ms for the phone route and 100.02 ms for the built-in route. These are software/device estimates, not measured physical latency or a benchmark against the Swift app.
+- Direct executable launches continued to report `not-determined` because they used a different microphone permission context. The README now launches the probe through `open` to use the app's grant.
+- Audible gain/mute behavior, UI device switching, hardware disconnection/recovery, Bluetooth, and physical latency still need manual acceptance; the checklist above remains open for those checks.
+
+These results establish implementation and automated verification, not completed hardware acceptance. No installed app was overwritten and no microphone permission was reset.
+
 ## Packaging interfaces
 
-`Scripts/package_app.sh [release|debug]` always produces `dist/KaraokeMic.app`. It builds only `karaoke-mic` / `KaraokeMic` with Cargo's cache, sets `MACOSX_DEPLOYMENT_TARGET=14.0`, and discovers the executable from Cargo's JSON artifact stream, including custom target directories. `version.env` supplies marketing version and build number. `Scripts/validate_bundle.sh [app-path]` checks identity, permission metadata, icon, executable format, and signature without launching.
+`Scripts/package_app.sh [release|debug]` always produces `dist/KaraokeMic.app`. It builds only `karaoke-mic` / `KaraokeMic` with Cargo's cache, sets `MACOSX_DEPLOYMENT_TARGET=14.0`, and discovers the executable from Cargo's JSON artifact stream, including custom target directories. Set `ARCHES='arm64 x86_64'` for a universal bundle, or either architecture for a single slice; requested slices are checked before signing. Install the corresponding Rust targets before cross-compiling. `version.env` supplies marketing version and build number. `Scripts/validate_bundle.sh [app-path]` checks identity, permission metadata, icon, executable format, and signature without launching.
 
-`Scripts/run_dev.sh` launches a debug bundle; `Scripts/compile_and_run.sh [--debug] [--test]` packages and opens the app after optional tests. Production builds default to release. The checked-in icon is reused during packaging; regeneration is an explicit developer task.
+`Scripts/run_dev.sh` launches a debug bundle; `Scripts/compile_and_run.sh [--debug] [--test] [--release-universal | --release-arches='arm64 x86_64']` packages and opens the app after optional tests. Release architecture flags cannot be combined with `--debug`. Production builds default to release. The checked-in icon is reused during packaging; regeneration is an explicit developer task.
